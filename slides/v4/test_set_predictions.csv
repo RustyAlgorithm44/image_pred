@@ -1,0 +1,23 @@
+Slide Name,True Class,Predicted Class,Correct,Confidence,Patch Agreement,Num Patches,Adeno Prob,Squamous Prob
+TCGA-BR-6707_stad_adeno,adeno,adeno,True,1.0000,1.0000,84870,1.0000,0.0000
+TCGA-IG-A51D_esca_squam,squamous,squamous,True,0.8095,0.8417,12024,0.1905,0.8095
+TCGA-BR-6454_stad_adeno,adeno,adeno,True,1.0000,1.0000,53457,1.0000,0.0000
+TCGA-IG-A8O2_esca_squam,squamous,squamous,True,0.6244,0.6547,8176,0.3756,0.6244
+TCGA-5M-AAT6_coad_adeno,adeno,adeno,True,0.6814,0.7049,10903,0.6814,0.3186
+TCGA-AG-3601_read_adeno,adeno,adeno,True,0.9857,0.9899,2669,0.9857,0.0143
+TCGA-BR-6710_stad_adeno,adeno,adeno,True,0.9998,0.9999,91553,0.9998,0.0002
+TCGA-AF-A56K_read_adeno,adeno,adeno,True,0.6301,0.6617,19861,0.6301,0.3699
+TCGA-IG-A3YB_esca_squam,squamous,squamous,True,0.5812,0.5896,22151,0.4188,0.5812
+TCGA-JY-A93F_esca_squam,squamous,squamous,True,0.6141,0.6339,10190,0.3859,0.6141
+TCGA-AG-3728_read_adeno,adeno,adeno,True,0.9905,0.9930,2006,0.9905,0.0095
+TCGA-BR-4361_stad_adeno,adeno,adeno,True,0.9987,0.9991,14823,0.9987,0.0013
+TCGA-AG-3584_read_adeno,adeno,adeno,True,0.9043,0.9068,3829,0.9043,0.0957
+TCGA-A6-5662_coad_adeno,adeno,adeno,True,0.9740,0.9767,2229,0.9740,0.0260
+TCGA-AG-3581_read_adeno,adeno,adeno,True,0.9967,0.9979,2345,0.9967,0.0033
+TCGA-IG-A7DP_esca_adeno,adeno,squamous,False,0.5791,0.5984,15954,0.4209,0.5791
+TCGA-AF-6655_read_adeno,adeno,adeno,True,1.0000,1.0000,8866,1.0000,0.0000
+TCGA-A6-5666_coad_adeno,adeno,adeno,True,0.9918,0.9930,3741,0.9918,0.0082
+TCGA-JY-A939_esca_adeno,adeno,adeno,True,0.9031,0.9465,3983,0.9031,0.0969
+TCGA-AG-3593_read_adeno,adeno,adeno,True,0.9900,0.9912,2713,0.9900,0.0100
+TCGA-IG-A3YA_esca_squam,squamous,squamous,True,0.5891,0.5935,12855,0.4109,0.5891
+TCGA-BR-7851_stad_adeno,adeno,adeno,True,0.5243,0.5180,61221,0.5243,0.4757

@@ -1,0 +1,4 @@
+1) How can a slide have 0 acceptable patches? This is sus.. A slide should technically have atleast one patch.. Can there be an output to see which are the slides which had no patches? so I can check manually if they are actually completely empty or not.
+2) Why is there no confusion matrix image output!?
+3) I got the "best_wsi_model.pth", but how can I now use this to predict an entire folder of .svs files, and get the output? Predictions for each slide as an output file, with the prob for both classes.
+4) Also, what are level 0 and level 1 magnifications? if these are like "superficial" and "zoomed", then can there be an even more zoomed one too?

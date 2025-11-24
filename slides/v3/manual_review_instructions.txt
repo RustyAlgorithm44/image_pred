@@ -1,0 +1,47 @@
+
+    WSI PATCH REJECTION REPORT
+    ==========================
+    
+    Total rejected patches: 446938
+    
+    Rejection Reasons:
+    - White background (>80% white): 445830 patches
+    - Low tissue (<25% tissue): 1108 patches  
+    - Other reasons: 0 patches
+    
+    MANUAL REVIEW INSTRUCTIONS:
+    ==========================
+    
+    1. Navigate to the rejected patches folder:
+       rejected_patches
+    
+    2. For QUICK review, focus on:
+       - Patches with 'low_tissue' in filename (might have small tissue regions)
+       - Randomly check a few 'white_background' patches to verify
+    
+    3. To move a patch BACK to accepted folder:
+       a. Remove 'REJECTED_reason_' from the filename
+       b. Move it to the appropriate folder in 'extracted_patches/'
+    
+    4. Example:
+       Original: REJECTED_low_tissue_0.20_slide1_x100_y200_l0_t0.20_w0.10.png
+       New name: slide1_x100_y200_l0_t0.20_w0.10.png
+       Move to: extracted_patches/adeno/slide1/level_0/ (or squamous/)
+    
+    5. Recommended workflow:
+       - Review 50-100 random rejected patches
+       - Only move back CLEARLY good patches with visible tissue
+       - This should take 10-15 minutes
+    
+    FILENAME FORMAT:
+    ===============
+    REJECTED_[reason]_[slide]_x[X]_y[Y]_l[level]_t[tissue%]_w[white%].png
+    
+    Where:
+    - reason: why patch was rejected
+    - slide: source slide name  
+    - X, Y: coordinates in slide
+    - level: resolution level (0=highest)
+    - tissue%: percentage of tissue detected
+    - white%: percentage of white background
+    

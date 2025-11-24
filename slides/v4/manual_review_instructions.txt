@@ -1,0 +1,21 @@
+
+    WSI PATCH REJECTION REPORT
+    ==========================
+    
+    NOTE: Rejected patch images are NOT saved to conserve disk space.
+    A detailed log of all rejected patches, including their metadata and
+    rejection reasons, is available in the following file:
+    
+    'rejected_patches_info.csv'
+    
+    This CSV file contains the following columns:
+    - patch_path: The path where the patch would have been saved.
+    - slide_name: The name of the source slide.
+    - coordinates: The (x, y, level) coordinates of the patch.
+    - tissue_percentage: The detected tissue percentage.
+    - white_percentage: The detected white background percentage.
+    - rejection_reason: The reason why the patch was rejected.
+    
+    You can use this CSV file for analysis or to identify slides that
+    may require parameter adjustments for patch extraction.
+    

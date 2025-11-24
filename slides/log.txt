@@ -1,0 +1,81 @@
+v0 - old version - without esca adeno
+v1 - with esca adeno, still same code and model, otsu patch recog - isn't good, some blanks are also taken, the patches are directly streamed to model and not saved
+v2 - improved model - patches are saved to disk, blank patches are ignored, squamous if 25, adeno will be 100 (25 each cancer)
+v3 - thresholding of pink and white. works very well, but there's a bug in testing. and it takes only 100 patches fixed per slide and ignores the rest
+v4 - fixed bug, doesn't save the rejected patches but saves the output csv of the rejected info, all acceptable slide patches are taken and used. 
+
+Add patch-level saliency visualization (Grad-CAM) to highlight predictive regions. - save this also
+within adeno dataset - cancer wise numbers - based on which cancer has more wwox del or not_del
+still run headless
+
+
+within adeno:
+deleted vs non-del
+for eg. if 100 samples of non-del adeno are showing 20% of squamous
+then (are) 100 samples of deleted adeno are showing 80% of squamous?
+
+
+if the model chooses 8 slides for the test, how is the adeno/squamous distributed?
+patches from each slide also can change in number..
+
+how do I get the predictions for all slides, if only the 8 are tested in slide_predictions.csv? is it the step 7 in the code?
+"Generating slide-level predictions..."
+this runs the same model to predict all slides?? but these are the same slides it trained on, so it should be predicting with 100% accuracy?
+
+
+
+======================== output ========================
+Dataset split:
+  Training slides: 32, patches: 1703
+  Testing slides: 8, patches: 374
+Found 40 slides
+  Adeno: 20
+  Squamous: 20
+
+--------------------------------------------------------------------------------
+Classification Report:
+--------------------------------------------------------------------------------
+              precision    recall  f1-score   support
+
+       adeno     0.7692    0.7453    0.7571       161
+    squamous     0.8119    0.8310    0.8213       213
+
+    accuracy                         0.7941       374
+   macro avg     0.7906    0.7882    0.7892       374
+weighted avg     0.7935    0.7941    0.7937       374
+
+
+ROC-AUC Score: 0.8583
+
+================================================================================
+                              ✓ PIPELINE COMPLETE!                              
+================================================================================
+
+Saved files:
+  - best_wsi_model.pth (trained model checkpoint)
+  - training_history.png (loss and accuracy curves)
+  - confusion_matrix.png (confusion matrix visualization)
+  - roc_curve.png (ROC curve)
+  - sample_patches.png (sample extracted patches)
+  - slide_predictions.csv (slide-level predictions)
+
+To visualize Grad-CAM for a specific patch:
+  visualize_gradcam(model, 'path/to/patch.png', class_names)
+
+================================================================================
+                                 EXAMPLE USAGE                                  
+================================================================================
+
+1. Quick prediction on a single slide:
+   result = quick_slide_predict('best_wsi_model.pth', 'path/to/slide.svs')
+
+2. Generate prediction heatmap:
+   create_prediction_heatmap(model, 'path/to/slide.svs')
+
+3. Visualize Grad-CAM for a patch:
+   visualize_gradcam(model, 'path/to/patch.png', ['adeno', 'squamous'])
+
+================================================================================
+
+
+But, the patches aren't saved only... so how can I do the gradcam to run this..

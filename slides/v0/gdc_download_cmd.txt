@@ -1,0 +1,4 @@
+mkdir del_samples
+./gdc-client download -m manifest.txt -d ./del_samples --no-related-files -n 5
+find del_samples -type f -name "*.svs" -exec mv -t del_samples {} +
+find del_samples -mindepth 1 -type d -exec rm -rf {} +

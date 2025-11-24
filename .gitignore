@@ -1,0 +1,7 @@
+# Ignore all SVS slide files
+*.svs
+*.pth
+dogs/dataset/
+slides/v3/rejected_patches_info.csv
+slides/v4/accepted_patches_info.csv
+slides/v4/rejected_patches_info.csv
