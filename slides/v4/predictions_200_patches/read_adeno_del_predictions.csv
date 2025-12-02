@@ -1,0 +1,20 @@
+Slide Name,Predicted Class,Confidence,Patch Agreement,Num Patches,Adeno Prob,Squamous Prob,True Class,Correct
+TCGA-AG-3578_read_adeno,adeno,0.9983,1.0000,337,0.9983,0.0017,adeno,True
+TCGA-AG-3582_read_adeno,adeno,0.9877,0.9938,322,0.9877,0.0123,adeno,True
+TCGA-AG-4007_read_adeno,adeno,0.9916,0.9962,260,0.9916,0.0084,adeno,True
+TCGA-DC-6682_read_adeno,adeno,1.0000,1.0000,400,1.0000,0.0000,adeno,True
+TCGA-AG-3591_read_adeno,adeno,0.9992,1.0000,336,0.9992,0.0008,adeno,True
+TCGA-DY-A1DE_read_adeno,adeno,0.7349,0.7475,400,0.7349,0.2651,adeno,True
+TCGA-AH-6897_read_adeno,adeno,0.9999,1.0000,400,0.9999,0.0001,adeno,True
+TCGA-AG-3892_read_adeno,adeno,0.9668,0.9663,356,0.9668,0.0332,adeno,True
+TCGA-AG-3725_read_adeno,adeno,0.9993,1.0000,280,0.9993,0.0007,adeno,True
+TCGA-AG-3600_read_adeno,adeno,0.9980,1.0000,335,0.9980,0.0020,adeno,True
+TCGA-AG-3731_read_adeno,adeno,0.9208,0.9315,365,0.9208,0.0792,adeno,True
+TCGA-EI-6508_read_adeno,adeno,1.0000,1.0000,400,1.0000,0.0000,adeno,True
+TCGA-EI-6917_read_adeno,adeno,0.9997,1.0000,400,0.9997,0.0003,adeno,True
+TCGA-AH-6544_read_adeno,adeno,0.9999,1.0000,400,0.9999,0.0001,adeno,True
+TCGA-AF-6672_read_adeno,adeno,0.9999,1.0000,400,0.9999,0.0001,adeno,True
+TCGA-AG-3732_read_adeno,adeno,0.9935,0.9932,292,0.9935,0.0065,adeno,True
+TCGA-AG-4005_read_adeno,adeno,0.9982,1.0000,260,0.9982,0.0018,adeno,True
+TCGA-AG-4015_read_adeno,adeno,0.9999,1.0000,354,0.9999,0.0001,adeno,True
+TCGA-AG-A026_read_adeno,adeno,0.7174,0.7100,400,0.7174,0.2826,adeno,True

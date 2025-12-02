@@ -1,0 +1,21 @@
+Slide Name,Predicted Class,Confidence,Patch Agreement,Num Patches,Adeno Prob,Squamous Prob,True Class,Correct
+TCGA-JY-A93E_esca_adeno,adeno,0.5843,0.5725,400,0.5843,0.4157,adeno,True
+TCGA-JY-A6FB_esca_adeno,squamous,0.6584,0.6512,367,0.3416,0.6584,adeno,False
+TCGA-2H-A9GJ_esca_adeno,adeno,0.9277,0.9425,400,0.9277,0.0723,adeno,True
+TCGA-2H-A9GK_esca_adeno,adeno,0.5542,0.5650,400,0.5542,0.4458,adeno,True
+TCGA-IC-A6RE_esca_adeno,adeno,0.7024,0.7125,400,0.7024,0.2976,adeno,True
+TCGA-JY-A938_esca_adeno,adeno,0.7078,0.7400,400,0.7078,0.2922,adeno,True
+TCGA-JY-A93D_esca_adeno,squamous,0.5100,0.5100,400,0.4900,0.5100,adeno,False
+TCGA-2H-A9GO_esca_adeno,adeno,0.6058,0.6425,400,0.6058,0.3942,adeno,True
+TCGA-L5-A43C_esca_adeno,adeno,0.7762,0.8370,362,0.7762,0.2238,adeno,True
+TCGA-2H-A9GN_esca_adeno,adeno,0.8506,0.8775,400,0.8506,0.1494,adeno,True
+TCGA-IG-A4QS_esca_adeno,squamous,0.5175,0.5375,400,0.4825,0.5175,adeno,False
+TCGA-JY-A6F8_esca_adeno,squamous,0.6074,0.6250,400,0.3926,0.6074,adeno,False
+TCGA-JY-A6FH_esca_adeno,adeno,0.6694,0.6625,400,0.6694,0.3306,adeno,True
+TCGA-2H-A9GI_esca_adeno,adeno,0.6784,0.6975,400,0.6784,0.3216,adeno,True
+TCGA-JY-A93C_esca_adeno,adeno,0.8168,0.8525,400,0.8168,0.1832,adeno,True
+TCGA-2H-A9GH_esca_adeno,adeno,0.6514,0.6825,400,0.6514,0.3486,adeno,True
+TCGA-2H-A9GM_esca_adeno,adeno,0.7986,0.8350,400,0.7986,0.2014,adeno,True
+TCGA-2H-A9GR_esca_adeno,adeno,0.5912,0.5800,400,0.5912,0.4088,adeno,True
+TCGA-2H-A9GQ_esca_adeno,adeno,0.5212,0.5275,400,0.5212,0.4788,adeno,True
+TCGA-2H-A9GL_esca_adeno,adeno,0.6980,0.7475,400,0.6980,0.3020,adeno,True

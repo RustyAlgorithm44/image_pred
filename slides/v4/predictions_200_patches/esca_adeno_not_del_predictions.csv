@@ -1,0 +1,8 @@
+Slide Name,Predicted Class,Confidence,Patch Agreement,Num Patches,Adeno Prob,Squamous Prob,True Class,Correct
+TCGA-ZR-A9CJ_esca_adeno,adeno,0.9999,1.0000,400,0.9999,0.0001,adeno,True
+TCGA-L5-A8NV_esca_adeno,adeno,0.8478,0.8950,400,0.8478,0.1522,adeno,True
+TCGA-IG-A7DP_esca_adeno,squamous,0.5825,0.6025,400,0.4175,0.5825,adeno,False
+TCGA-Q9-A6FW_esca_adeno,adeno,0.7724,0.7925,400,0.7724,0.2276,adeno,True
+TCGA-L5-A43E_esca_adeno,adeno,0.9598,0.9800,400,0.9598,0.0402,adeno,True
+TCGA-L5-A4OG_esca_adeno,adeno,0.8433,0.8775,400,0.8433,0.1567,adeno,True
+TCGA-JY-A939_esca_adeno,adeno,0.9189,0.9675,400,0.9189,0.0811,adeno,True

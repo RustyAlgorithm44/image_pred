@@ -149,7 +149,7 @@ class WSIPatchExtractor:
         
         if rejected_dir:
             rejected_patch_dir = Path(rejected_dir) / slide_name / f"level_{level}"
-            rejected_patch_dir.mkdir(parents=True, exist_ok=True)
+            # rejected_patch_dir.mkdir(parents=True, exist_ok=True)
         
         # Get dimensions at specified level
         level_dims = slide.level_dimensions[level]
@@ -204,7 +204,7 @@ class WSIPatchExtractor:
                     base_filename = f"{slide_name}_x{x}_y{y}_l{level}_t{tissue_pct:.2f}_w{white_pct:.2f}.png"
                     rejected_filename = f"REJECTED_{rejection_reason}_{base_filename}"
                     rejected_path = rejected_patch_dir / rejected_filename
-                    patch.save(rejected_path)
+                    # patch.save(rejected_path)
                     
                     rejection_log.append({
                         'patch_path': str(rejected_path),
@@ -231,70 +231,27 @@ class WSIPatchExtractor:
 
 def create_simple_review_report(rejected_dir):
     """Create a simple text report for manual review"""
-    rejected_path = Path(rejected_dir)
     
-    # Collect rejection statistics
-    rejection_stats = defaultdict(int)
-    total_rejected = 0
-    
-    for rejected_file in rejected_path.rglob('REJECTED_*.png'):
-        total_rejected += 1
-        filename = rejected_file.name
-        # Extract rejection reason from filename
-        if 'white_background' in filename:
-            rejection_stats['white_background'] += 1
-        elif 'low_tissue' in filename:
-            rejection_stats['low_tissue'] += 1
-        else:
-            rejection_stats['other'] += 1
-    
-    # Create report
     report_content = f"""
     WSI PATCH REJECTION REPORT
     ==========================
     
-    Total rejected patches: {total_rejected}
+    NOTE: Rejected patch images are NOT saved to conserve disk space.
+    A detailed log of all rejected patches, including their metadata and
+    rejection reasons, is available in the following file:
     
-    Rejection Reasons:
-    - White background (>80% white): {rejection_stats['white_background']} patches
-    - Low tissue (<25% tissue): {rejection_stats['low_tissue']} patches  
-    - Other reasons: {rejection_stats['other']} patches
+    'rejected_patches_info.csv'
     
-    MANUAL REVIEW INSTRUCTIONS:
-    ==========================
+    This CSV file contains the following columns:
+    - patch_path: The path where the patch would have been saved.
+    - slide_name: The name of the source slide.
+    - coordinates: The (x, y, level) coordinates of the patch.
+    - tissue_percentage: The detected tissue percentage.
+    - white_percentage: The detected white background percentage.
+    - rejection_reason: The reason why the patch was rejected.
     
-    1. Navigate to the rejected patches folder:
-       {rejected_dir}
-    
-    2. For QUICK review, focus on:
-       - Patches with 'low_tissue' in filename (might have small tissue regions)
-       - Randomly check a few 'white_background' patches to verify
-    
-    3. To move a patch BACK to accepted folder:
-       a. Remove 'REJECTED_reason_' from the filename
-       b. Move it to the appropriate folder in 'extracted_patches/'
-    
-    4. Example:
-       Original: REJECTED_low_tissue_0.20_slide1_x100_y200_l0_t0.20_w0.10.png
-       New name: slide1_x100_y200_l0_t0.20_w0.10.png
-       Move to: extracted_patches/adeno/slide1/level_0/ (or squamous/)
-    
-    5. Recommended workflow:
-       - Review 50-100 random rejected patches
-       - Only move back CLEARLY good patches with visible tissue
-       - This should take 10-15 minutes
-    
-    FILENAME FORMAT:
-    ===============
-    REJECTED_[reason]_[slide]_x[X]_y[Y]_l[level]_t[tissue%]_w[white%].png
-    
-    Where:
-    - reason: why patch was rejected
-    - slide: source slide name  
-    - X, Y: coordinates in slide
-    - level: resolution level (0=highest)
-    - tissue%: percentage of tissue detected
-    - white%: percentage of white background
+    You can use this CSV file for analysis or to identify slides that
+    may require parameter adjustments for patch extraction.
     """
     
     # Save report
@@ -303,7 +260,10 @@ def create_simple_review_report(rejected_dir):
         f.write(report_content)
     
     print(f"✓ Manual review instructions saved: {report_path}")
-    print(f"✓ Total rejected patches to review: {total_rejected}")
+
+    # Since we don't save images, we can't count them here.
+    # The count is available when 'rejected_patches_info.csv' is created.
+    print(f"✓ Details about rejected patches can be found in 'rejected_patches_info.csv'")
     
     return report_path
 
@@ -759,31 +719,44 @@ def visualize_patch_filtering(patches_dir, rejected_dir, num_samples=8):
     rejected_sample = random.sample(rejected_patches, min(num_samples, len(rejected_patches)))
     
     # Create visualization
-    fig, axes = plt.subplots(2, num_samples, figsize=(20, 8))
-    if num_samples == 1:
-        axes = axes.reshape(2, 1)
+    num_rows = 2 if rejected_sample else 1
+    fig, axes = plt.subplots(num_rows, num_samples, figsize=(20, 4 * num_rows))
+    if num_samples == 1 and num_rows > 1:
+        axes = axes.reshape(num_rows, 1)
+    elif num_samples > 1 and num_rows == 1:
+        axes = axes.reshape(1, num_samples)
+    elif num_samples == 1 and num_rows == 1:
+        axes = np.array([[axes]])
+
+
     
-    fig.suptitle('Patch Filtering Results - Accepted vs Rejected', fontsize=16, fontweight='bold')
-    
+    if rejected_sample:
+        fig.suptitle('Patch Filtering Results - Accepted vs Rejected', fontsize=16, fontweight='bold')
+    else:
+        fig.suptitle('Accepted Patch Samples', fontsize=16, fontweight='bold')
+
     # Plot accepted patches
     for i in range(num_samples):
+        ax = axes[0, i]
         if i < len(accepted_sample):
             patch_path = accepted_sample[i]
             img = Image.open(patch_path)
-            axes[0, i].imshow(img)
-            axes[0, i].set_title(f"Accepted\n{Path(patch_path).name[:30]}...", fontsize=8)
-        axes[0, i].axis('off')
+            ax.imshow(img)
+            ax.set_title(f"Accepted\n{Path(patch_path).name[:30]}...", fontsize=8)
+        ax.axis('off')
 
-    # Plot rejected patches
-    for i in range(num_samples):
-        if i < len(rejected_sample):
-            patch_path = rejected_sample[i]
-            img = Image.open(patch_path)
-            axes[1, i].imshow(img)
-            # Extract reason from filename
-            reason = Path(patch_path).name.split('_')[1] if '_' in Path(patch_path).name else 'unknown'
-            axes[1, i].set_title(f"Rejected: {reason}\n{Path(patch_path).name[:30]}...", fontsize=8)
-        axes[1, i].axis('off')
+    # Plot rejected patches only if they exist
+    if rejected_sample:
+        for i in range(num_samples):
+            ax = axes[1, i]
+            if i < len(rejected_sample):
+                patch_path = rejected_sample[i]
+                img = Image.open(patch_path)
+                ax.imshow(img)
+                # Extract reason from filename
+                reason = Path(patch_path).name.split('_')[1] if '_' in Path(patch_path).name else 'unknown'
+                ax.set_title(f"Rejected: {reason}\n{Path(patch_path).name[:30]}...", fontsize=8)
+            ax.axis('off')
     
     plt.tight_layout()
     plt.savefig('patch_filtering_results.png', dpi=300, bbox_inches='tight')
@@ -1014,793 +987,225 @@ def batch_predict_all_slides(model, patches_dir, class_names, output_csv='all_sl
 # ============================================================================ 
 
 import argparse
-
 import tempfile
 
-
-
-# ============================================================================
-
-# 11. MAIN EXECUTION PIPELINE
-
-# ============================================================================
-
-
-
 def run_training_pipeline(args):
-
-
-
     """Main training and evaluation pipeline"""
 
-
-
-    
-
-
-
     # Configuration
-
-
-
     DATA_DIR = args.data_dir
-
-
-
-    PATCHES_DIR = 'extracted_patches'
-
-
-
+    PATCHES_DIR = '/mnt/Linux_storage/extracted_patches'
     REJECTED_DIR = 'rejected_patches'
-
-
-
     BATCH_SIZE = args.batch_size
-
-
-
     NUM_EPOCHS = args.epochs
 
-
-
     # OpenSlide levels to extract from. Level 0 is highest resolution.
-
-
-
     LEVELS = [0, 1] 
-
-
-
-    
-
-
-
     print("\n" + "="*80)
-
-
-
     print("AUTOMATED WSI PATCH CLASSIFICATION SYSTEM - TRAINING MODE".center(80))
-
-
-
     print("With Intelligent Patch Filtering".center(80))
-
-
-
     print("="*80 + "\n")
-
-
-
-    
-
-
 
     # Step 1: Extract and filter patches from SVS files
-
-
-
     print("[STEP 1/10] Extracting and filtering patches from SVS files...")
-
-
-
     print("-"*80)
-
-
-
     _, _, _ = extract_all_patches_from_svs(
-
-
-
         DATA_DIR, PATCHES_DIR, REJECTED_DIR, 
-
-
-
         max_patches_per_slide=None, levels=LEVELS
-
-
-
     )
 
-
-
-    
-
-
-
     # Step 2: Visualize filtering results
-
-
-
     print("\n[STEP 2/10] Visualizing patch filtering results...")
-
-
-
     print("-"*80)
-
-
-
     visualize_patch_filtering(PATCHES_DIR, REJECTED_DIR)
 
-
-
-    
-
-
-
     # Step 3: Provide manual review options
-
-
-
     print("\n[STEP 3/10] Generating patch rejection report...")
-
-
-
     print("-"*80)
-
-
-
     create_simple_review_report(REJECTED_DIR)
 
-
-
-
-
-
-
-    # Clean up rejected patches to save space
-
-
-
-    if Path(REJECTED_DIR).exists():
-
-
-
-        print(f"\n[INFO] Removing '{REJECTED_DIR}' directory to save space...")
-
-
-
-        shutil.rmtree(REJECTED_DIR)
-
-
-
-        print(f"[INFO] Directory '{REJECTED_DIR}' removed.")
-
-
-
-    
-
-
-
+    # The REJECTED_DIR is no longer created, so no need to remove it.
     # Step 4: Create dataloaders
-
-
-
     print("\n[STEP 4/10] Creating dataloaders...")
-
-
-
     print("-"*80)
-
-
-
     try:
-
-
-
         train_loader, test_loader, class_names, test_slides = create_dataloaders_from_patches(
-
-
-
             PATCHES_DIR,
-
-
-
             batch_size=BATCH_SIZE
-
-
-
         )
-
-
-
     except ValueError as e:
-
-
-
         print(f"Error: {e}")
-
-
-
         print("Cannot proceed with training. Please ensure patches were extracted.")
-
-
-
         return
-
-
-
-
-
-
 
     # Step 5: Create model
-
-
-
     print("\n[STEP 5/10] Creating ResNet50 model...")
-
-
-
     print("-"*80)
-
-
-
     model = create_resnet50_model(num_classes=len(class_names))
 
-
-
-    
-
-
-
     # Step 6: Train model
-
-
-
     print("\n[STEP 6/10] Starting training...")
-
-
-
     print("-"*80)
-
-
-
     history = train_model(model, train_loader, test_loader, class_names, num_epochs=NUM_EPOCHS)
 
-
-
-    
-
-
-
     # Step 7: Load best model
-
-
-
     print("\n[STEP 7/10] Loading best model...")
-
-
-
     print("-"*80)
-
-
-
     checkpoint = torch.load('best_wsi_model.pth')
-
-
-
     model.load_state_dict(checkpoint['model_state_dict'])
-
-
-
     print(f"Loaded model from epoch {checkpoint['epoch']+1} with test acc {checkpoint['test_acc']:.2f}%\n")
 
-
-
-    
-
-
-
     # Step 8: Generate predictions on the test set
-
-
-
     print("\n[STEP 8/10] Generating slide-level predictions for the test set...")
-
-
-
     print("-"*80)
-
-
-
     results = []
 
-
-
-    
-
-
-
     # Find the true class for each test slide
-
-
-
     slide_to_class = {}
-
-
-
     for class_idx, class_name in enumerate(class_names):
-
-
-
         class_dir = Path(PATCHES_DIR) / class_name
-
-
-
         if class_dir.exists():
-
-
-
             for slide_dir in class_dir.iterdir():
-
-
-
                 if slide_dir.name in test_slides:
-
-
-
                     slide_to_class[slide_dir.name] = class_name
 
-
-
-
-
-
-
     for slide_name in tqdm(test_slides, desc="Predicting on test slides"):
-
-
-
         true_class = slide_to_class.get(slide_name)
-
-
-
         if not true_class:
-
-
-
             print(f"Warning: Could not find class for test slide {slide_name}. Skipping.")
-
-
-
             continue
-
-
-
-
-
-
-
         slide_dir = Path(PATCHES_DIR) / true_class / slide_name
-
-
-
-        
-
-
-
         result = predict_slide_from_patches(model, slide_dir, class_names)
-
-
-
         if result:
-
-
-
             result['true_class'] = true_class
-
-
-
             result['correct'] = result['predicted_class'].lower() == true_class.lower()
-
-
-
             results.append(result)
 
-
-
-
-
-
-
     # Save to CSV
-
-
-
     if results:
-
-
-
         df_data = []
-
-
-
         for result in results:
-
-
-
             row = {
-
-
-
                 'Slide Name': result['slide_name'],
-
-
-
                 'True Class': result['true_class'],
-
-
-
                 'Predicted Class': result['predicted_class'],
-
-
-
                 'Correct': result['correct'],
-
-
-
                 'Confidence': f"{result['confidence']:.4f}",
-
-
-
                 'Patch Agreement': f"{result['patch_agreement']:.4f}",
-
-
-
                 'Num Patches': result['num_patches'],
-
-
-
             }
-
-
-
             for name, prob in result['class_probabilities'].items():
-
-
-
                 row[f'{name.capitalize()} Prob'] = f"{prob:.4f}"
-
-
-
             df_data.append(row)
 
-
-
-            
-
-
-
         df = pd.DataFrame(df_data)
-
-
-
         df.to_csv('test_set_predictions.csv', index=False)
-
-
-
         print(f"\n✓ Test set predictions saved to test_set_predictions.csv")
 
-
-
-
-
-
-
         # Print summary
-
-
-
         accuracy = sum(res['correct'] for res in results) / len(results)
-
-
-
         print(f"\nOverall Slide-Level Accuracy on Test Set: {accuracy:.2%}")
-
-
-
         print(f"Total Slides Processed: {len(results)}")
-
-
-
         print(f"Correct Predictions: {sum(res['correct'] for res in results)}")
-
-
-
         print(f"Incorrect Predictions: {len(results) - sum(res['correct'] for res in results)}")
-
-
-
     else:
-
-
-
         print("No results to save for the test set.")
 
-
-
-
-
-
-
     # Step 9: Plot results
-
-
-
     print("\n[STEP 9/10] Generating training visualizations...")
-
-
-
     print("-"*80)
-
-
-
     plot_training_history(history)
 
-
-
-    
-
-
-
     # Step 10: Plot confusion matrix
-
-
-
     print("\n[STEP 10/10] Generating confusion matrix...")
-
-
-
     print("-"*80)
-
-
-
     if results:
-
-
-
         plot_confusion_matrix(results, class_names)
-
-
-
-
-
-
-
     print("\n" + "="*80)
-
-
-
     print("✓ TRAINING PIPELINE COMPLETE!".center(80))
-
-
-
     print("="*80)
-
-
-
-    
-
-
-
     print("\nSaved files:")
-
-
-
     print("  - best_wsi_model.pth (trained model)")
-
-
-
     print("  - accepted_patches_info.csv (accepted patches details)")
-
-
-
     print("  - rejected_patches_info.csv (rejected patches details)")
-
-
-
     print("  - patch_filtering_results.png (filtering visualization)")
-
-
-
     print("  - manual_review_instructions.txt (review instructions)")
-
-
-
     print("  - training_history_enhanced.png (training curves)")
-
-
-
     print("  - test_set_predictions.csv (test set slide predictions)")
-
-
-
     print("  - confusion_matrix.png (slide-level confusion matrix)")
-
-
-
     print("  - slides_with_no_patches.txt (slides with no good patches)")
 
-
-
 def run_prediction_pipeline(args):
-
     """Runs prediction on a folder of SVS files."""
-
     MODEL_PATH = args.model_path
-
     INPUT_DIR = args.input_dir
-
     OUTPUT_CSV = args.output_csv
-
     LEVELS = [0, 1] # Levels to extract patches from
-
-
-
     print("\n" + "="*80)
-
     print("AUTOMATED WSI PATCH CLASSIFICATION SYSTEM - PREDICTION MODE".center(80))
-
     print("="*80 + "\n")
 
-
-
     # Step 1: Load model
-
     print(f"[STEP 1/3] Loading model from {MODEL_PATH}...")
-
     print("-"*80)
-
     if not Path(MODEL_PATH).exists():
-
         print(f"Error: Model file not found at {MODEL_PATH}")
-
         return
-
-    
-
     checkpoint = torch.load(MODEL_PATH, map_location=device)
-
     class_names = checkpoint.get('class_names', ['adeno', 'squamous']) # Default if not in checkpoint
-
     model = create_resnet50_model(num_classes=len(class_names), pretrained=False)
-
     model.load_state_dict(checkpoint['model_state_dict'])
-
     model.to(device)
-
     print(f"Loaded model trained for {len(class_names)} classes: {class_names}\n")
 
-
-
     # Step 2: Extract patches from input SVS files
-
     with tempfile.TemporaryDirectory() as temp_dir:
-
         print(f"[STEP 2/3] Extracting patches to temporary directory: {temp_dir}")
-
         print("-"*80)
-
-        
-
         patches_dir = Path(temp_dir) / "extracted_patches"
 
-        
-
         extract_all_patches_from_svs(
-
             data_dir=INPUT_DIR,
-
             patches_dir=patches_dir,
-
             rejected_dir=None, # Don't save rejected patches in prediction mode
-
             max_patches_per_slide=200, # Extract more patches for better prediction
-
             levels=LEVELS
-
         )
 
-
-
         # Step 3: Generate predictions
-
         print("\n[STEP 3/3] Generating slide-level predictions...")
-
         print("-"*80)
-
         if not any(patches_dir.iterdir()):
-
             print("No patches were extracted. Cannot run prediction.")
-
         else:
-
             _, _ = batch_predict_all_slides(model, patches_dir, class_names, output_csv=OUTPUT_CSV)
 
-
-
     print("\n" + "="*80)
-
     print("✓ PREDICTION PIPELINE COMPLETE!".center(80))
-
     print("="*80)
-
     print(f"\nPredictions saved to: {OUTPUT_CSV}")
 
-
-
-
-
 # ============================================================================
-
 # RUN THE PIPELINE
-
 # ============================================================================
-
-
 
 if __name__ == "__main__":
-
     set_seed(42)
-
-
-
     parser = argparse.ArgumentParser(description="Automated WSI Patch Classification System")
-
     subparsers = parser.add_subparsers(dest='mode', required=True, help='Select mode: train or predict')
 
-
-
     # --- Training Mode ---
-
     parser_train = subparsers.add_parser('train', help='Run the full training pipeline')
-
     parser_train.add_argument('--data-dir', type=str, default='dataset', help='Directory with adeno/ and squamous/ subfolders containing .svs files')
-
     parser_train.add_argument('--epochs', type=int, default=20, help='Number of training epochs')
-
     parser_train.add_argument('--batch-size', type=int, default=16, help='Batch size for training')
-
     parser_train.set_defaults(func=run_training_pipeline)
 
-
-
     # --- Prediction Mode ---
-
     parser_predict = subparsers.add_parser('predict', help='Predict on a folder of new .svs files')
-
     parser_predict.add_argument('--model-path', type=str, default='best_wsi_model.pth', help='Path to the trained model (.pth file)')
-
     parser_predict.add_argument('--input-dir', type=str, required=True, help='Directory containing .svs files to predict on')
-
     parser_predict.add_argument('--output-csv', type=str, default='predictions.csv', help='Path to save the output predictions CSV file')
-
     parser_predict.set_defaults(func=run_prediction_pipeline)
-
-
-
     args = parser.parse_args()
-
     args.func(args)
-
-
