@@ -3,23 +3,10 @@ v1 - with esca adeno, still same code and model, otsu patch recog - isn't good, 
 v2 - improved model - patches are saved to disk, blank patches are ignored, squamous if 25, adeno will be 100 (25 each cancer)
 v3 - thresholding of pink and white. works very well, but there's a bug in testing. and it takes only 100 patches fixed per slide and ignores the rest
 v4 - fixed bug, doesn't save the rejected patches but saves the output csv of the rejected info, all acceptable slide patches are taken and used. 
-
-Todo:
-subset_download_tcga.py downloads one less for read, coad.. check for other cancer types also if this issue is there.
-Finalize the train&pred script. fixed_wsi_classifier.py or fixed_wsi_classifier.py?? What's the difference b/w the both?
-
-Make the patches extracted during predictions also to be saved in the same dir as when the training happens, but with an _pred or something in the folder.
-Also, ask the user how many patches to take per slide. For eg, if user says 200, take 200 patches for level 0 and level 1. If user says "all", then take all acceptable patches (the ones without much white) for both zoom levels. just like the training, take all patches except white patches for prediction.
-Make the patch extraction multi-threaded, so it happens faster - use 8 threads. 
+Code now accepts number of patches argument in predict mode, and does multi threaded patch extraction, and saves the extracted pred patches in same dir, not temp.
 
 Add patch-level saliency visualization (Grad-CAM) to highlight predictive regions. - save this also
 within adeno dataset - cancer wise numbers - based on which cancer has more wwox del or not_del
-still run headless
-
-within adeno:
-deleted vs non-del
-for eg. if 100 samples of non-del adeno are showing 20% of squamous
-then (are) 100 samples of deleted adeno are showing 80% of squamous?
 
 if the model chooses 8 slides for the test, how is the adeno/squamous distributed?
 patches from each slide also can change in number..
