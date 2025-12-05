@@ -1,4 +1,5 @@
 # enhanced_wsi_classifier_fixed.py
+import itertools
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -18,6 +19,7 @@ import random
 from collections import defaultdict
 import warnings
 import shutil
+import concurrent.futures
 warnings.filterwarnings('ignore')
 import os
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
@@ -123,13 +125,17 @@ class WSIPatchExtractor:
         return rejection_reason is None, tissue_pct, white_pct, rejection_reason
     
     def extract_and_filter_patches(self, slide_path, output_dir, rejected_dir, 
-                                 level=0, max_patches_per_slide=200):
+                                 level=0, max_patches_per_slide=None):
         """
         Extract patches and automatically filter them.
         OpenSlide levels are numbered from 0 (highest resolution) to N-1 (lowest resolution).
         - Level 0: Full resolution, highest detail (e.g., 40x magnification).
         - Level 1: Downsampled by a factor (e.g., 4x), making it 10x magnification.
         - And so on. We check if the requested level is valid.
+        
+        Updated to support random sampling and tissue prioritization:
+        - If max_patches_per_slide is set, it shuffles coordinates to sample randomly.
+        - It collects a buffer of candidates (2x requested) and selects the ones with highest tissue %.
         """
         try:
             slide = openslide.OpenSlide(slide_path)
@@ -157,71 +163,112 @@ class WSIPatchExtractor:
         patches_info = []
         rejection_log = []
         total_patches_extracted = 0
-        good_count = 0
         
         print(f"Extracting and filtering patches from {slide_name} at level {level}...")
         
         y_coords = range(0, level_dims[1] - self.patch_size, self.stride)
         x_coords = range(0, level_dims[0] - self.patch_size, self.stride)
 
-        pbar = tqdm(total=len(y_coords) * len(x_coords), desc=f"Processing {slide_name} L{level}", leave=False)
+        # Generate all coordinates first to allow for shuffling
+        all_coords = list(itertools.product(x_coords, y_coords))
+        
+        # Determine sampling strategy
+        is_limited_sampling = max_patches_per_slide is not None
+        
+        if is_limited_sampling:
+            # Shuffle to ensure random sampling across the slide
+            random.shuffle(all_coords)
+            # Collect more than needed to select the best tissue (buffer strategy)
+            # We collect 2x the requested amount to have a pool to pick the "best" tissue from
+            buffer_multiplier = 2
+            collection_goal = max_patches_per_slide * buffer_multiplier
+        else:
+            collection_goal = float('inf')
 
-        for y in y_coords:
-            for x in x_coords:
-                pbar.update(1)
-                if max_patches_per_slide is not None and good_count >= max_patches_per_slide:
-                    break
-                    
-                # Read patch
-                patch = slide.read_region(
-                    (x * int(slide.level_downsamples[level]), 
-                     y * int(slide.level_downsamples[level])),
-                    level,
-                    (self.patch_size, self.patch_size)
-                ).convert('RGB')
-                
-                total_patches_extracted += 1
-                
-                # Check if patch is good
-                is_good, tissue_pct, white_pct, rejection_reason = self.is_good_patch(patch)
-                
-                if is_good:
-                    # Create informative filename
-                    base_filename = f"{slide_name}_x{x}_y{y}_l{level}_t{tissue_pct:.2f}_w{white_pct:.2f}.png"
-                    patch_path = patch_dir / base_filename
-                    patch.save(patch_path)
-                    
-                    patches_info.append({
-                        'patch_path': str(patch_path),
-                        'coordinates': (x, y, level),
-                        'slide_name': slide_name,
-                        'tissue_percentage': tissue_pct,
-                        'white_percentage': white_pct,
-                        'status': 'accepted'
-                    })
-                    good_count += 1
-                elif rejected_dir:
-                    base_filename = f"{slide_name}_x{x}_y{y}_l{level}_t{tissue_pct:.2f}_w{white_pct:.2f}.png"
-                    rejected_filename = f"REJECTED_{rejection_reason}_{base_filename}"
-                    rejected_path = rejected_patch_dir / rejected_filename
-                    # patch.save(rejected_path)
-                    
-                    rejection_log.append({
-                        'patch_path': str(rejected_path),
-                        'slide_name': slide_name,
-                        'coordinates': (x, y, level),
-                        'tissue_percentage': tissue_pct,
-                        'white_percentage': white_pct,
-                        'rejection_reason': rejection_reason
-                    })
-            if max_patches_per_slide is not None and good_count >= max_patches_per_slide:
+        candidates = []
+
+        pbar = tqdm(total=len(all_coords), desc=f"Processing {slide_name} L{level}", leave=False)
+
+        for x, y in all_coords:
+            pbar.update(1)
+            
+            # Check if we have enough candidates in our buffer
+            if is_limited_sampling and len(candidates) >= collection_goal:
                 break
+                    
+            # Read patch
+            patch = slide.read_region(
+                (x * int(slide.level_downsamples[level]), 
+                 y * int(slide.level_downsamples[level])),
+                level,
+                (self.patch_size, self.patch_size)
+            ).convert('RGB')
+            
+            total_patches_extracted += 1
+            
+            # Check if patch is good
+            is_good, tissue_pct, white_pct, rejection_reason = self.is_good_patch(patch)
+            
+            if is_good:
+                # Instead of saving immediately, we add to candidates
+                candidate = {
+                    'patch': patch,
+                    'coordinates': (x, y, level),
+                    'slide_name': slide_name,
+                    'tissue_percentage': tissue_pct,
+                    'white_percentage': white_pct,
+                    'status': 'accepted'
+                }
+                candidates.append(candidate)
+
+            elif rejected_dir:
+                # Rejections are logged as before
+                base_filename = f"{slide_name}_x{x}_y{y}_l{level}_t{tissue_pct:.2f}_w{white_pct:.2f}.png"
+                rejected_filename = f"REJECTED_{rejection_reason}_{base_filename}"
+                rejected_path = rejected_patch_dir / rejected_filename
+                # patch.save(rejected_path)
+                
+                rejection_log.append({
+                    'patch_path': str(rejected_path),
+                    'slide_name': slide_name,
+                    'coordinates': (x, y, level),
+                    'tissue_percentage': tissue_pct,
+                    'white_percentage': white_pct,
+                    'rejection_reason': rejection_reason
+                })
         
         pbar.close()
+        
+        # Selection Phase: Prioritize high tissue content
+        if is_limited_sampling and candidates:
+            # Sort by tissue percentage descending
+            candidates.sort(key=lambda c: c['tissue_percentage'], reverse=True)
+            # Select top N
+            final_selection = candidates[:max_patches_per_slide]
+        else:
+            final_selection = candidates
+
+        # Saving Phase: Save only the selected patches
+        for item in final_selection:
+            patch = item.pop('patch') # Remove image object before saving metadata
+            tissue_pct = item['tissue_percentage']
+            white_pct = item['white_percentage']
+            x, y = item['coordinates'][0], item['coordinates'][1]
+
+            # Create informative filename
+            base_filename = f"{slide_name}_x{x}_y{y}_l{level}_t{tissue_pct:.2f}_w{white_pct:.2f}.png"
+            patch_path = patch_dir / base_filename
+            patch.save(patch_path)
+            
+            item['patch_path'] = str(patch_path)
+            patches_info.append(item)
+
         slide.close()
         
-        rejected_count = total_patches_extracted - good_count
-        print(f"  Level {level}: {good_count} accepted, {rejected_count} rejected out of {total_patches_extracted} total")
+        good_count = len(patches_info)
+        rejected_count = total_patches_extracted - good_count # Note: this is approximate as we might stop early
+        
+        print(f"  Level {level}: {good_count} accepted (selected from {len(candidates)} candidates), {len(rejection_log)} logged rejections")
         
         return patches_info, rejection_log, good_count
 
@@ -591,70 +638,94 @@ def train_model(model, train_loader, test_loader, class_names, num_epochs=20):
 # 8. EXTRACT ALL PATCHES FROM SVS FILES WITH AUTOMATIC FILTERING
 # ============================================================================ 
 
+def _process_slide_wrapper(args):
+    """Helper function for parallel execution to process a single slide."""
+    svs_file, data_path, patches_path, rejected_path, is_training_mode, levels, max_patches_per_slide = args
+    
+    # Each thread needs its own extractor instance
+    extractor = WSIPatchExtractor(patch_size=224, tissue_threshold=0.25, white_threshold=0.8)
+    
+    # Determine class name from parent directory if in training mode
+    if is_training_mode and svs_file.parent.name != data_path.name:
+        class_name = svs_file.parent.name
+    else:
+        class_name = 'unknown'
+        
+    slide_name = svs_file.stem
+    
+    slide_patches_info = []
+    slide_rejection_log = []
+    slide_accepted_count = 0
+    
+    for level in levels:
+        output_class_dir = patches_path / class_name if is_training_mode else patches_path
+        rejected_class_dir = rejected_path / class_name if rejected_path and is_training_mode else rejected_path
+
+        patches_info, rejection_log, good_count = extractor.extract_and_filter_patches(
+            str(svs_file),
+            output_class_dir,
+            rejected_class_dir,
+            level=level,
+            max_patches_per_slide=max_patches_per_slide
+        )
+        slide_patches_info.extend(patches_info)
+        slide_rejection_log.extend(rejection_log)
+        slide_accepted_count += good_count
+
+    if slide_accepted_count == 0:
+        # Return the slide name if no patches were accepted
+        return slide_patches_info, slide_rejection_log, slide_name
+    
+    # Return None for the slide name if patches were found
+    return slide_patches_info, slide_rejection_log, None
+
 def extract_all_patches_from_svs(data_dir, patches_dir, rejected_dir, 
                                max_patches_per_slide=200, levels=[0, 1]):
-    """Extract patches from all SVS files with automatic filtering"""
+    """Extract patches from all SVS files with automatic filtering using multiple threads."""
     data_path = Path(data_dir)
     patches_path = Path(patches_dir)
     if rejected_dir:
         rejected_path = Path(rejected_dir)
-    
-    extractor = WSIPatchExtractor(patch_size=224, tissue_threshold=0.25, white_threshold=0.8)
+    else:
+        rejected_path = None  # Ensure it's None if not provided
     
     all_patches_info = []
     all_rejection_log = []
     slides_with_no_patches = []
     
     print("\n" + "="*80)
-    print("EXTRACTING AND FILTERING PATCHES FROM ALL SVS FILES".center(80))
+    print("EXTRACTING AND FILTERING PATCHES FROM ALL SVS FILES (MULTI-THREADED)".center(80))
     print("="*80 + "\n")
     
     # Check for class subdirectories ('adeno', 'squamous') for training mode
     is_training_mode = any(d.is_dir() and d.name in ['adeno', 'squamous'] for d in data_path.iterdir())
     
     if is_training_mode:
-        svs_files_map = {
-            'adeno': list((data_path / 'adeno').glob('*.svs')),
-            'squamous': list((data_path / 'squamous').glob('*.svs'))
-        }
+        svs_files = list((data_path / 'adeno').glob('*.svs')) + list((data_path / 'squamous').glob('*.svs'))
     else:
         # Prediction mode: just get all svs files from the input directory
-        svs_files_map = {'unknown': list(data_path.glob('*.svs'))}
+        svs_files = list(data_path.glob('*.svs'))
 
-    total_slides = sum(len(files) for files in svs_files_map.values())
+    total_slides = len(svs_files)
     if total_slides == 0:
         print(f"No .svs files found in {data_path}. Exiting.")
         return [], [], []
 
-    print(f"Found {total_slides} slides to process...")
+    print(f"Found {total_slides} slides to process using up to 8 threads...")
 
-    for class_name, svs_files in svs_files_map.items():
-        if not svs_files: continue
-        print(f"\nProcessing {len(svs_files)} slides for class: '{class_name}'")
+    # Prepare arguments for each worker
+    tasks = [(svs_file, data_path, patches_path, rejected_path, is_training_mode, levels, max_patches_per_slide) for svs_file in svs_files]
 
-        for svs_file in svs_files:
-            slide_name = svs_file.stem
-            print(f"\nExtracting from: {slide_name}")
-            
-            slide_accepted_count = 0
-            for level in levels:
-                output_class_dir = patches_path / class_name if is_training_mode else patches_path
-                rejected_class_dir = rejected_path / class_name if rejected_dir and is_training_mode else rejected_dir
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        # Use executor.map to process slides in parallel and show progress
+        results = list(tqdm(executor.map(_process_slide_wrapper, tasks), total=total_slides, desc="Processing slides"))
 
-                patches_info, rejection_log, good_count = extractor.extract_and_filter_patches(
-                    str(svs_file),
-                    output_class_dir,
-                    rejected_class_dir,
-                    level=level,
-                    max_patches_per_slide=max_patches_per_slide
-                )
-                all_patches_info.extend(patches_info)
-                all_rejection_log.extend(rejection_log)
-                slide_accepted_count += good_count
-
-            if slide_accepted_count == 0:
-                slides_with_no_patches.append(slide_name)
-                print(f"WARNING: Slide {slide_name} had 0 acceptable patches.")
+    # Aggregate results from all workers
+    for patches_info, rejection_log, no_patch_slide_name in results:
+        all_patches_info.extend(patches_info)
+        all_rejection_log.extend(rejection_log)
+        if no_patch_slide_name:
+            slides_with_no_patches.append(no_patch_slide_name)
 
     # Save detailed logs
     if all_patches_info:
@@ -1141,6 +1212,19 @@ def run_prediction_pipeline(args):
     INPUT_DIR = args.input_dir
     OUTPUT_CSV = args.output_csv
     LEVELS = [0, 1] # Levels to extract patches from
+    
+    # Determine max_patches_per_slide from args
+    if args.num_patches.lower() == 'all':
+        max_patches_per_slide = None
+        print("Extracting all acceptable patches per slide.")
+    else:
+        try:
+            max_patches_per_slide = int(args.num_patches)
+            print(f"Extracting up to {max_patches_per_slide} patches per slide per level.")
+        except ValueError:
+            print(f"Error: --num-patches must be 'all' or an integer. Got '{args.num_patches}'.")
+            return
+
     print("\n" + "="*80)
     print("AUTOMATED WSI PATCH CLASSIFICATION SYSTEM - PREDICTION MODE".center(80))
     print("="*80 + "\n")
@@ -1159,26 +1243,25 @@ def run_prediction_pipeline(args):
     print(f"Loaded model trained for {len(class_names)} classes: {class_names}\n")
 
     # Step 2: Extract patches from input SVS files
-    with tempfile.TemporaryDirectory() as temp_dir:
-        print(f"[STEP 2/3] Extracting patches to temporary directory: {temp_dir}")
-        print("-"*80)
-        patches_dir = Path(temp_dir) / "extracted_patches"
+    patches_dir = Path('/mnt/Linux_storage/extracted_patches_pred')
+    print(f"[STEP 2/3] Extracting patches to permanent directory: {patches_dir}")
+    print("-"*80)
+    
+    extract_all_patches_from_svs(
+        data_dir=INPUT_DIR,
+        patches_dir=patches_dir,
+        rejected_dir=None, # Don't save rejected patches in prediction mode
+        max_patches_per_slide=max_patches_per_slide,
+        levels=LEVELS
+    )
 
-        extract_all_patches_from_svs(
-            data_dir=INPUT_DIR,
-            patches_dir=patches_dir,
-            rejected_dir=None, # Don't save rejected patches in prediction mode
-            max_patches_per_slide=200, # Extract more patches for better prediction
-            levels=LEVELS
-        )
-
-        # Step 3: Generate predictions
-        print("\n[STEP 3/3] Generating slide-level predictions...")
-        print("-"*80)
-        if not any(patches_dir.iterdir()):
-            print("No patches were extracted. Cannot run prediction.")
-        else:
-            _, _ = batch_predict_all_slides(model, patches_dir, class_names, output_csv=OUTPUT_CSV)
+    # Step 3: Generate predictions
+    print("\n[STEP 3/3] Generating slide-level predictions...")
+    print("-"*80)
+    if not any(patches_dir.iterdir()):
+        print("No patches were extracted. Cannot run prediction.")
+    else:
+        _, _ = batch_predict_all_slides(model, patches_dir, class_names, output_csv=OUTPUT_CSV)
 
     print("\n" + "="*80)
     print("✓ PREDICTION PIPELINE COMPLETE!".center(80))
@@ -1206,6 +1289,7 @@ if __name__ == "__main__":
     parser_predict.add_argument('--model-path', type=str, default='best_wsi_model.pth', help='Path to the trained model (.pth file)')
     parser_predict.add_argument('--input-dir', type=str, required=True, help='Directory containing .svs files to predict on')
     parser_predict.add_argument('--output-csv', type=str, default='predictions.csv', help='Path to save the output predictions CSV file')
+    parser_predict.add_argument('--num-patches', type=str, default='all', help='Number of patches per level ("all" or an integer). Default: "all"')
     parser_predict.set_defaults(func=run_prediction_pipeline)
     args = parser.parse_args()
     args.func(args)
