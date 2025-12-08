@@ -4,6 +4,12 @@ v2 - improved model - patches are saved to disk, blank patches are ignored, squa
 v3 - thresholding of pink and white. works very well, but there's a bug in testing. and it takes only 100 patches fixed per slide and ignores the rest
 v4 - fixed bug, doesn't save the rejected patches but saves the output csv of the rejected info, all acceptable slide patches are taken and used. 
 Code now accepts number of patches argument in predict mode, and does multi threaded patch extraction, and saves the extracted pred patches in same dir, not temp.
+Takes the patches in random, and not the first few sequentially.
+
+Change the subset_downloader to actually just subset and rearrange files.
+Download all the .svs from the processed manifests, to avoid downloading everytime??
+Or shall the code be as it is so, if some reviewer asks, we can show?
+
 
 Add patch-level saliency visualization (Grad-CAM) to highlight predictive regions. - save this also
 within adeno dataset - cancer wise numbers - based on which cancer has more wwox del or not_del
