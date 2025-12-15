@@ -2,9 +2,6 @@ https://www.kaggle.com/models/google/resnet-v2/tensorFlow2/50-feature-vector/2?t
 
 Use this model maybe??
 
-
-
-
 Look at these code classifier.py and Dogs_vs_Wolves_ResNet50.ipynb files and understand..
 I want you to create a new py file just like these files, with all the same outputs that I would see if I ran the py.
 I tried to build but it wasn't so good. Some of the below points are there in the wsi code, but they don't work.. like the otsu.. and the direct streaming to the model is so slow.
@@ -13,8 +10,8 @@ Add a random seed for reproducibility. Make the loss graphs look better or somet
 from dataset for training: "adeno" and "squamous". These contain .svs files from whole slide images, so add a step to convert each slide image into patches, 
 and get one prediction per slide. i.e, Combine patch predictions to get a slide-level result. Also, take the patches in different resolutions/zoom. Get it?
 Basically, extract and classify patches, then aggregate the results for the whole slide.
-Also:
 
+Also:
 ignore this - try to reduce memory/disk usage by streaming patches instead of saving to disk. - save everything to disk as jpg or png patches or whatever.
 Add an example cell that visualizes a few extracted patches per slide.
 Tissue masking (Otsu or thresholding) to skip empty/background patches didn't really work that well. many blank patches also were taken for training/testing.
@@ -22,7 +19,7 @@ So I'm thinking, after all patches are saved to a folder, then what if I manuall
 Add patch-level saliency visualization (Grad-CAM) to highlight predictive regions.
 Convert the inference loop to save slide-level predictions and a CSV summary of slide probabilities..
 
-I also had a few doubrs from the output of my old model. I had given 20 adeno and 20 squamous slides as input.
+I also had a few doubts from the output of my old model. I had given 20 adeno and 20 squamous slides as input.
 And these are few snippets of the output:
 Dataset split:
   Training slides: 32, patches: 1703
@@ -36,26 +33,6 @@ And is it like, every epoch, the 8 slides are random/different?
 Also, the number of patches from each slide may differ. How is this combated?
 
 My old code also gave this in output:
-
-================================================================================
-                                 EXAMPLE USAGE                                  
-================================================================================
-
-1. Quick prediction on a single slide:
-   result = quick_slide_predict('best_wsi_model.pth', 'path/to/slide.svs')
-
-2. Generate prediction heatmap:
-   create_prediction_heatmap(model, 'path/to/slide.svs')
-
-3. Visualize Grad-CAM for a patch:
-   visualize_gradcam(model, 'path/to/patch.png', ['adeno', 'squamous'])
-
-
-But how can I run if none of the patches are being saved!?
-
-how do I get the predictions for all slides, if only the 8 are tested in slide_predictions.csv? is it the step 7 in the code?
-"Generating slide-level predictions..."
-this runs the same model to predict all slides?? but these are the same slides it trained on, so it should be predicting with 100% accuracy?
 
 Also, after all this I will be using the generated model to predict on a full folder with svs images. tell how to do that also. For that also, I need an output csv file..
 with these columns:

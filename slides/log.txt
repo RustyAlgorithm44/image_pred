@@ -6,6 +6,9 @@ v4 - fixed bug, doesn't save the rejected patches but saves the output csv of th
 Code now accepts number of patches argument in predict mode, and does multi threaded patch extraction, and saves the extracted pred patches in same dir, not temp.
 Takes the patches in random, and not the first few sequentially.
 
+Improved env.yml file
+Predictions for all the available deleted slides (~400)
+
 Change the subset_downloader to actually just subset and rearrange files.
 Download all the .svs from the processed manifests, to avoid downloading everytime??
 Or shall the code be as it is so, if some reviewer asks, we can show?

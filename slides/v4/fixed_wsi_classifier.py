@@ -1243,7 +1243,7 @@ def run_prediction_pipeline(args):
     print(f"Loaded model trained for {len(class_names)} classes: {class_names}\n")
 
     # Step 2: Extract patches from input SVS files
-    patches_dir = Path('/mnt/Linux_storage/extracted_patches_pred')
+    patches_dir = Path('/mnt/DATA/extracted_patches_pred')
     print(f"[STEP 2/3] Extracting patches to permanent directory: {patches_dir}")
     print("-"*80)
     
@@ -1285,7 +1285,9 @@ if __name__ == "__main__":
     parser_train.set_defaults(func=run_training_pipeline)
 
     # --- Prediction Mode ---
-    parser_predict = subparsers.add_parser('predict', help='Predict on a folder of new .svs files')
+    parser_predict = subparsers.add_parser('predict', 
+        help='Predict on a folder of new .svs files. Parameters: --input-dir (required), --model-path, --output-csv, --num-patches',
+        description='Predict mode: Classify .svs slides in a directory. Requires --input-dir.')
     parser_predict.add_argument('--model-path', type=str, default='best_wsi_model.pth', help='Path to the trained model (.pth file)')
     parser_predict.add_argument('--input-dir', type=str, required=True, help='Directory containing .svs files to predict on')
     parser_predict.add_argument('--output-csv', type=str, default='predictions.csv', help='Path to save the output predictions CSV file')
